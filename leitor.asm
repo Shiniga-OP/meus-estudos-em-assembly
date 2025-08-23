@@ -4,8 +4,8 @@ esse leitor de texto consegue ler em um arquivo de até 128 bytes
 .global _start
 
 .section .data
-nome:    .asciz "ola.txt" // caminho
-buffer:  .space 128 // 128 bytes pra leitura
+nome: .asciz "ola.txt" // caminho
+buffer: .space 128 // 128 bytes pra leitura
 
 .section .text
 _start:
