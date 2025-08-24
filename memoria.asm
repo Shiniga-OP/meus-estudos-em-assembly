@@ -1,7 +1,11 @@
 .global _start
+.section .data
+msg: .asciz "texto pra ser copiado na memória"
+tam = . - msg
 .section .text
 _start:
-	sub sp, sp, 16 // reservando 16 bytes na pilha
+	// string temporária:
+	sub sp, sp, 4 // reservando 16 bytes na pilha
 	mov x2, sp // guardando o início
 	
 	// escrevendo no array
@@ -13,14 +17,40 @@ _start:
 	
 	mov w1, 'a'
 	strb w1, [x2], 1
-	
-	mov x0, 1
+	mov w1, '\n'
+	strb w1, [x2], 1
 	mov x1, sp // passando o ponteiro pra escrever
 	sub x2, x2, x1 // calculando o tamanho (início - fim)
-	mov x8, 64 // instrução de escrita
-	svc 0
-	// finalização do programa
-	mov x0, 0
-	mov x8, 93
-	svc 0
+	bl log
+	add sp, sp, 4
 	
+	// teste de cópia de string na memória
+	sub sp, sp, tam
+	
+	mov x2, tam
+	ldr x1, = msg
+	
+	mov x0, sp
+	bl copiar_string
+	mov x1, sp
+	mov x2, tam // restaura o tamanho
+	
+	bl log
+	bl fim
+log:
+	mov x0, 1
+	mov x8, 64
+	svc 0
+	ret
+fim:
+    mov x0, 0
+    mov x8, 93
+    svc 0
+
+// x0: pilha pra cópia, x1: string a ser copiada, x2: o tamanho da string
+copiar_string:
+    ldrb w3, [x1], 1   // carrega byte e incrementar ponteiro
+    strb w3, [x0], 1   // armazena byte e incrementar ponteiro
+    subs x2, x2, 1  // decrementa contador
+    b.gt copiar_string  // continua se não terminou
+    ret
