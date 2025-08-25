@@ -1,20 +1,25 @@
 .global _start
 .section .data
 texto: .asciz "texto de exemplo\n"
-tam = .- texto
+tam = . - texto
+msgS: .asciz "o texto tem X\n"
+tamMsgS = . - msgS
+msgN: .asciz "o texto não tem X\n"
+tamMsgN = . - msgN
 
 .section .text
 _start:
 	ldr x1, = texto
 	mov x2, tam
-	
 	bl log
-	sub sp, sp, tam // reserva 16 bytes
+	
+	sub sp, sp, tam // reserva os bytes do tamanho da string
 	mov x0, sp
 	// copia a string
 	bl copiar_string
 	
 	mov x0, sp  // cópia da string
+	
 	mov w1, 'o' // char alvo
 	mov w2, 'X' // char novo
 	bl substituir_chars
@@ -22,16 +27,57 @@ _start:
 	mov x1, sp // string modificada
 	mov x2, tam
 	bl log
-	bl fim
+	
+	mov x0, sp
+	// testando a string modificada
+	mov w1, 'X'
+	bl achar_char
+	bl comparar
+	bl log
+	// testando texto original
+	mov x0, sp
+	mov x2, tam
+	bl limp_pilha
+	mov x0, sp
+	ldr x1, = texto
+	bl copiar_string
+	mov x0, sp
+	// mostrando o original
+	mov x1, sp
+	mov x2, tam
+	bl log
+	
+	mov x0, sp
+	mov w1, 'X'
+	bl achar_char
+	bl comparar
+	bl log
+	
+	add sp, sp, tam // libera memória
+	bl fim;
+	
+comparar:
+	cmp x0, -1 // compara x0 com -1 (que significa falso)
+	b.ne tem_t // senão for
+	ldr x1, = msgN
+	mov x2, tamMsgN
+	ret
+tem_t:
+	ldr x1, = msgS
+	mov x2, tamMsgS
+	ret
+	
 log:
 	mov x0, 1
 	mov x8, 64
 	svc 0
 	ret
+	
 fim:
     mov x0, 0
     mov x8, 93
     svc 0
+
 copiar_string:
     ldrb w3, [x1], 1   // carrega byte e incrementar ponteiro
     strb w3, [x0], 1   // armazena byte e incrementar ponteiro
@@ -42,13 +88,41 @@ copiar_string:
 substituir_chars:
     ldrb w3, [x0] // carrega caractere atual
     cmp w3, 0 // verifica fim da string
-    b.eq retorne
+    b.eq retorne_subs_char // se for igual executa "retorne"
     cmp w3, w1 // verifica se é o caractere alvo
-    b.ne proximo
+    b.ne proximo // senão, executa "próximo"
     strb w2, [x0] // substituí pelo novo caractere
 proximo:
     add x0, x0, 1 // avança para próximo caractere
     b substituir_chars
-retorne:
+retorne_subs_char:
     ret
-    
+// x0 = string, w1 = char, x0 = retorna posição ou -1 se não encontrar
+achar_char:
+    mov x2, x0
+loop_achar:
+    ldrb w3, [x2]
+    cbz w3, nao_achado
+    cmp w3, w1
+    b.eq achado
+    add x2, x2, 1
+    b loop_achar
+achado:
+    mov x0, x2
+    ret
+nao_achado:
+    mov x0, -1
+    ret
+
+// x0 = endereço da pilha, x2 = tamanho
+limp_pilha:
+    mov x3, 0
+    mov x4, x2
+loop_limp:
+    cbz x4, retorne_limp
+    strb w3, [x0], 1
+    subs x4, x4, 1
+    b.gt loop_limp
+    mov x2, x2
+retorne_limp:
+	ret
