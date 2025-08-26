@@ -42,9 +42,11 @@ _start:
 	ldr x1, = texto
 	bl copiar_string
 	mov x0, sp
+	bl str_tam // pegando o tamamho
 	// mostrando o original
 	mov x1, sp
-	mov x2, tam
+	mov x2, x0
+	mov x0, sp
 	bl log
 	
 	mov x0, sp
@@ -77,7 +79,15 @@ fim:
     mov x0, 0
     mov x8, 93
     svc 0
-
+// x0 = string, retorna w0 = tamanho
+str_tam:
+    mov x1, x0
+tam_loop:
+    ldrb w2, [x1], 1
+    cbnz x2, tam_loop
+    sub x0, x1, x0
+    sub x0, x0, 1
+    ret
 copiar_string:
     ldrb w3, [x1], 1   // carrega byte e incrementar ponteiro
     strb w3, [x0], 1   // armazena byte e incrementar ponteiro
@@ -88,7 +98,7 @@ copiar_string:
 substituir_chars:
     ldrb w3, [x0] // carrega caractere atual
     cmp w3, 0 // verifica fim da string
-    b.eq retorne_subs_char // se for igual executa "retorne"
+    b.eq retorne_subs_char // se for igual executa "retorne_subs_char"
     cmp w3, w1 // verifica se é o caractere alvo
     b.ne proximo // senão, executa "próximo"
     strb w2, [x0] // substituí pelo novo caractere
@@ -113,7 +123,6 @@ achado:
 nao_achado:
     mov x0, -1
     ret
-
 // x0 = endereço da pilha, x2 = tamanho
 limp_pilha:
     mov x3, 0
